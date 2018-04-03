@@ -4,6 +4,8 @@ library(stringr)
 
 start <- Sys.time()
 
+dir <- getwd()
+setwd(dir)
 
 ## URJC
 
@@ -262,7 +264,7 @@ df_def_uc3m <- subset(df_def_uc3m, select = c(1,2,3,4,10,5,6,7,8,9))
 
 df_definitiva <- rbind(df_def_urjc, df_def_uc3m, df_def_UCM)
 
-write.csv(df_definitiva, file = "/Users/HECTOR/Dropbox/MASTER/DATOS/R/TFMscraper UCM/df_def.csv", row.names = FALSE)
+write.csv(df_definitiva, file = "df_def.csv", row.names = FALSE)
 
 
 
