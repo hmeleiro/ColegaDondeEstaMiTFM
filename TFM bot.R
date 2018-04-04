@@ -30,7 +30,7 @@ contador <- paste("Han pasado", dias, "días y Cristina Cifuentes aún no ha enc
 post_tweet(status = contador, token = twitter_token)  #  Lanzo el tweet
 
 
-## Duerme durante 4 minutos (240)
+## Duerme durante 4 minutos (240 segundos)
 Sys.sleep(240)
 
 
