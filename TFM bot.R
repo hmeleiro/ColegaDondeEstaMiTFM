@@ -1,14 +1,16 @@
 library(rtweet)
 
-tweets <- read.csv("/Users/HECTOR/Dropbox/MASTER/DATOS/R/TFMscraper UCM/df_def.csv")
+
+
+tweets <- read.csv("df_def.csv")
 tweets$tweet <- as.character(tweets$tweet)
 
 
-appname <- "TFMsBot"
+appname <- # Añadir nombre de la app de Twitter
 
-key <- "gaB501l1X3Bz0uTkH8spgaf5f"
+key <- # Añadir credenciales
 
-secret <- "Ilk0CGPvHUbm1lvhUzu660J9Phq9uRxgpvkE2yescro8VL8Qra"
+secret <- # Añadir credenciales
 
 
 twitter_token <- create_token(
