@@ -4,8 +4,6 @@ library(stringr)
 
 start <- Sys.time()
 
-dir <- getwd()
-setwd(dir)
 
 ## URJC
 
@@ -40,7 +38,7 @@ for (p in 1:length(urls)) {
   
   links_tot <- c(links_tot, links)
   print(links)
-
+  
 }
 
 links_tot <- links_tot[-1]
@@ -60,7 +58,7 @@ for (p in 1:length(links_tot)) {
   link <- links_tot[p]
   
   autor <- str_split(autor, ";", simplify = TRUE)
-
+  
   if (length(autor) > 1) {
     autor <- autor[1]
   }
@@ -251,6 +249,105 @@ df$long <- nchar(df$tweet) - nchar(as.character(df$links)) + 23
 df_def_uc3m <- subset(df, long <= 280)
 
 
+###  UAM
+
+
+pag <- c(1,2,3,4,5,6,7)
+urls <- paste0("https://repositorio.uam.es/discover?scope=10486/129794&rpp=200&page=",pag,"&group_by=none&etal=0")
+
+links_tot <- NA
+for (n in 1:length(urls)) {
+  x <- GET(urls[n], add_headers('user-agent' = desktop_agents[sample(1:10, 1)]))
+  
+  links <- x %>% read_html() %>% html_nodes(".artifact-title a") %>% html_attr(name = "href")
+  links <- paste0("https://repositorio.uam.es", links)
+  
+  links_tot <- c(links_tot, links)
+  
+  print(links)
+  
+}
+
+
+df <- data.frame(autor = NA, titulo = NA, depositado = NA, links = NA, tipo = NA)
+
+
+for (n in 2:length(links_tot)) {
+  x <- GET(links_tot[n], add_headers('user-agent' = desktop_agents[sample(1:10, 1)]))
+  
+  info <- x %>% read_html() %>% html_nodes(".simple-item-view-other") %>% html_text()
+  
+  autor <- info[str_detect(info, "Autor") == TRUE]
+  autor <- str_remove_all(autor, "\nAutor \\(es\\):\n|\n")
+  
+  titulo <- info[str_detect(info, "Título:") == TRUE]
+  titulo <- str_remove_all(titulo, "\nTítulo:\n|\n")
+  
+  depositado <- info[str_detect(info, "Fecha") == TRUE]
+  depositado <- str_remove(depositado, "\nFecha de edición:\n")
+  depositado <- str_remove(depositado, "\n")
+  
+  tipo <- x %>% read_html() %>% html_nodes(xpath = '//*[@id="ds-trail"]/li[9]/a') %>% html_text()
+  
+  if (length(titulo) == 0) {
+    titulo <- NA
+  }
+  
+  if (length(tipo) == 0) {
+    tipo <- NA
+  } 
+  
+  if (length(autor) == 0) {
+    autor <- NA
+  }
+  
+  if (length(depositado) == 0) {
+    depositado <- NA
+  }
+  
+  
+  try(line <- data.frame("autor" = autor, "titulo" = titulo, "depositado" = depositado, "links" = links_tot[n], "tipo" = tipo))
+  try(df <- rbind(df, line))
+  print(titulo)
+  print(autor)
+  print(depositado)
+  print(tipo)
+  print(links_tot[n])
+}
+
+df <- df[-1,]
+
+
+df_uam <- df[str_detect(df$tipo, "máster") == TRUE | is.na(df$tipo),]
+
+df_uam <- subset(df_uam, select = c(1:4))
+
+
+
+df_uam$autor[str_detect(df_uam$autor, ";") == TRUE] <- str_split(df_uam$autor, ";")[1]
+
+df_uam$apellidos <- str_split(df_uam$autor, pattern = ", ", simplify = TRUE, n = 2)[,1]
+df_uam$nombre <- str_split(df_uam$autor, pattern = ", ", simplify = TRUE, n = 2)[,2]
+df_uam$apellidos <- str_split(df_uam$apellidos, " ", simplify = TRUE)[,1]
+
+
+df_uam$nombre_completo <-  paste(df_uam$nombre, df_uam$apellidos)
+
+
+df_uam$depositado <- substr(str_trim(df_uam$depositado), 1, 4)
+df_uam$depositado <- as.Date.character(df_uam$depositado, format = "%Y")
+df_uam$depositado <- format(df_uam$depositado, format = "%Y")
+
+año <- df_uam$depositado
+
+df_uam$tweet <- paste0("En ", año, ", ", df_uam$nombre_completo, " entregó su TFM titulado ", "'", df_uam$titulo, "'.", " Cristina Cifuentes sigue sin encontrar el suyo.", " ", df_uam$links)
+df_uam$long <- nchar(df_uam$tweet) - nchar(as.character(df_uam$links)) + 23
+
+
+
+df_def_uam <- subset(df_uam, long <= 280)
+
+
 
 
 ##  Fusion
@@ -262,9 +359,36 @@ df_def_uc3m$fecha <- NA
 df_def_uc3m <- subset(df_def_uc3m, select = c(1,2,3,4,10,5,6,7,8,9))
 
 
-df_definitiva <- rbind(df_def_urjc, df_def_uc3m, df_def_UCM)
+df_def_uam$fecha <- NA
+df_def_uam <- subset(df_def_uam, select = c(1,2,3,4,10,5,6,7,8,9))
 
-write.csv(df_definitiva, file = "df_def.csv", row.names = FALSE)
+df_definitiva <- rbind(df_def_urjc, df_def_uc3m, df_def_uam, df_def_UCM)
+
+
+df_definitiva <- df_definitiva[df_definitiva$titulo != "Related items",]
+
+df_definitiva$tweet <- str_remove_all(df_definitiva$tweet, "\n")
+
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, "\\.'", "'")
+
+
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, " 01 ", " 1 ")
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, " 02 ", " 2 ")
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, " 03 ", " 3 ")
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, " 04 ", " 4 ")
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, " 05 ", " 5 ")
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, " 06 ", " 6 ")
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, " 07 ", " 7 ")
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, " 08 ", " 8 ")
+df_definitiva$tweet <- str_replace_all(df_definitiva$tweet, " 09 ", " 9 ")
+
+
+df_definitiva$autor <- as.character(df_definitiva$autor)
+df_definitiva$autor <- str_replace_all(df_definitiva$autor, ",,", ",")
+df_definitiva$autor <- str_replace_all(df_definitiva$autor, " : ", " ")
+
+
+write.csv(df_definitiva, file = "/Users/HECTOR/Dropbox/MASTER/DATOS/R/TFMscraper UCM/df_def.csv", row.names = FALSE)
 
 
 
