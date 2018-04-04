@@ -1,6 +1,6 @@
 library(rtweet)
 
-
+setwd("Ruta-a-la-carpeta-donde-esté-df_def.csv") # Añadir la ruta al csv
 
 tweets <- read.csv("df_def.csv")
 tweets$tweet <- as.character(tweets$tweet)
