@@ -19,7 +19,6 @@ twitter_token <- create_token(
   consumer_secret = secret)
 
 
-Sys.sleep(240)
 ##  Primer tuit del día con un contador de los dias que lleva Cristina Cifuentes sin enseñar su TFM
 start <- Sys.time()
 
